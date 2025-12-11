@@ -44,7 +44,14 @@ export default function TranscriptDetail() {
                     </div>
 
                     <div className="bg-slate-900 rounded-lg p-6 min-h-[300px] whitespace-pre-wrap text-slate-200 leading-relaxed">
-                        {transcript.transcript_text || "Transcription in progress..."}
+                        {transcript.status === 'failed' ? (
+                            <div className="text-red-400 border border-red-900/50 bg-red-900/20 p-4 rounded">
+                                <h3 className="font-bold mb-2">Transcription Failed</h3>
+                                <p>{transcript.error_message || "Unknown error occurred."}</p>
+                            </div>
+                        ) : (
+                            transcript.transcript_text || "Transcription in progress..."
+                        )}
                     </div>
 
                     {transcript.media_url && (
