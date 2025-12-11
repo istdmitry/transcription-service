@@ -11,12 +11,19 @@ import os
 # Needs WHATSAPP_ACCESS_TOKEN and PHONE_NUMBER_ID in env
 
 def get_whatsapp_user(phone_number: str, db: Session):
+    # 1. Try to find user by Phone Number
+    user = db.query(User).filter(User.phone_number == phone_number).first()
+    if user:
+        return user
+
+    # 2. KeyFallback: Try legacy email format (or create new)
     email = f"whatsapp_{phone_number}@bot.user"
     user = db.query(User).filter(User.email == email).first()
     if not user:
         from app.core.security import get_password_hash
         user = User(
             email=email,
+            phone_number=phone_number,
             hashed_password=get_password_hash(str(uuid.uuid4())),
             api_key=str(uuid.uuid4())
         )

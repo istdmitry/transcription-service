@@ -9,6 +9,7 @@ export default function Home() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export default function Home() {
         localStorage.setItem('token', data.access_token);
         router.push('/dashboard');
       } else {
-        await api.register(email, password);
+        await api.register(email, password, phoneNumber);
         setIsLogin(true); // Switch to login after register
         alert("Registration successful! Please login.");
       }
@@ -57,6 +58,20 @@ export default function Home() {
               type="email"
             />
           </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Phone Number (Optional)</label>
+              <Input
+                value={phoneNumber}
+                onChange={(e: any) => setPhoneNumber(e.target.value)}
+                placeholder="+1234567890"
+                type="tel"
+              />
+              <p className="text-xs text-slate-500 mt-1">Used to link WhatsApp/Telegram</p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
             <Input

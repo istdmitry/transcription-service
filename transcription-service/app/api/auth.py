@@ -23,6 +23,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     hashed_pw = get_password_hash(user.password)
     new_user = User(
         email=user.email,
+        phone_number=user.phone_number,
         hashed_password=hashed_pw,
         api_key=api_key
     )
