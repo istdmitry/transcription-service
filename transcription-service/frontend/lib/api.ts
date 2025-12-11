@@ -38,6 +38,14 @@ export const api = {
         return res.json();
     },
 
+    async getTranscript(token: string, id: string) {
+        const res = await fetch(`${API_URL}/transcripts/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch transcript');
+        return res.json();
+    },
+
     async uploadFile(token: string, file: File) {
         const formData = new FormData();
         formData.append('file', file);

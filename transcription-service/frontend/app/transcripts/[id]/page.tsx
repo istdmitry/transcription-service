@@ -15,19 +15,15 @@ export default function TranscriptDetail() {
             router.push('/');
             return;
         }
-        api.getTranscripts(token).then((list) => {
-            // Ideally we have a single get API, but for now filtering list or fetch one if API allows
-            // We added a get_transcript endpoint in backend: /transcripts/{id}
-            fetch(`${window.location.protocol}//${window.location.hostname}:8000/transcripts/${params.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-                .then(res => {
-                    if (res.ok) return res.json();
-                    throw new Error("Not found");
-                })
+
+        if (params.id) {
+            api.getTranscript(token, params.id as string)
                 .then(data => setTranscript(data))
-                .catch(() => router.push('/dashboard'));
-        });
+                .catch(err => {
+                    console.error(err);
+                    router.push('/dashboard');
+                });
+        }
     }, [params.id, router]);
 
     if (!transcript) return <div className="p-10 text-center text-slate-500">Loading...</div>;
