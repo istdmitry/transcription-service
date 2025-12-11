@@ -47,7 +47,8 @@ def list_transcripts(date_filter=None):
             print("-" * 60)
             for t in transcripts:
                 date_str = t.get('created_at', '')[:10]
-                print(f"{t['id']:<5} {date_str:<12} {t['status']:<12} {t['filename']}")
+                filename = t.get('filename', 'Unknown')
+                print(f"{t['id']:<5} {date_str:<12} {t['status']:<12} {filename}")
         else:
             print(f"Error listing transcripts: {res.text}")
     except Exception as e:

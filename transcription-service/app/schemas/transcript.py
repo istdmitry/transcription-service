@@ -14,6 +14,7 @@ class TranscriptResponse(BaseModel):
     id: int
     status: str
     media_url: str
+    filename: Optional[str] = None
     transcript_text: Optional[str] = None
     created_at: datetime
     language: str
