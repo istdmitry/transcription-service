@@ -1,7 +1,7 @@
 [build]
 builder = "nixpacks"
-# Ensure poetry is installed and dependencies are ready
-buildCommand = "pip install poetry && poetry config virtualenvs.create false && poetry install --no-dev"
+# Switch to standard pip, simpler for Railway
+buildCommand = "pip install -r requirements.txt"
 
 [deploy]
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
