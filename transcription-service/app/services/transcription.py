@@ -40,9 +40,9 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session):
         db.commit()
 
         # 5. Notify Telegram (Status Update Only)
-        if transcript.user.telegram_chat_id:
+        if transcript.owner.telegram_chat_id:
             from app.services.telegram import send_message
-            send_message(transcript.user.telegram_chat_id, "✅ Transcription complete! View it on your dashboard.")
+            send_message(transcript.owner.telegram_chat_id, "✅ Transcription complete! View it on your dashboard.")
 
         # Cleanup
         os.remove(tmp_path)
@@ -53,8 +53,8 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session):
             transcript.error_message = str(e)
             db.commit()
             
-            if transcript.user.telegram_chat_id:
+            if transcript.owner.telegram_chat_id:
                 from app.services.telegram import send_message
-                send_message(transcript.user.telegram_chat_id, f"❌ Transcription failed: {str(e)}")
+                send_message(transcript.owner.telegram_chat_id, f"❌ Transcription failed: {str(e)}")
                 
         print(f"Error processing transcript {transcript_id}: {e}")
