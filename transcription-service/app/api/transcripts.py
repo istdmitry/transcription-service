@@ -74,3 +74,29 @@ def get_transcript(
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
     return transcript
+
+@router.delete("/{transcript_id}", status_code=204)
+def delete_transcript(
+    transcript_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    transcript = db.query(Transcript).filter(Transcript.id == transcript_id, Transcript.user_id == current_user.id).first()
+    if not transcript:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+    
+    # 1. Delete from S3
+    if transcript.media_url:
+        try:
+            # Check if media_url is full URL or key. Our code stores key.
+            # But if we store full URL, we might need to parse.
+            # Current implementation: s3_key = f"uploads/..." -> This is the key.
+            s3_client.delete_file(transcript.media_url)
+        except Exception as e:
+            print(f"Warning: Failed to delete S3 file {transcript.media_url}: {e}")
+            # We continue to delete the DB record even if S3 fails (orphan file is better than broken UI)
+
+    # 2. Delete from DB
+    db.delete(transcript)
+    db.commit()
+    return

@@ -45,4 +45,14 @@ class S3Client:
             logger.error(f"S3 Presign Error: {e}")
             return None
 
+    
+    def delete_file(self, object_name: str):
+        """Delete a file from S3."""
+        try:
+            self.s3.delete_object(Bucket=self.bucket, Key=object_name)
+            logger.info(f"Deleted S3 object: {object_name}")
+        except ClientError as e:
+            logger.error(f"S3 Delete Error: {e}")
+            raise e
+
 s3_client = S3Client()

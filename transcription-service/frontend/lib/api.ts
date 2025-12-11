@@ -54,6 +54,14 @@ export const api = {
         return res.json();
     },
 
+    async deleteTranscript(token: string, id: number) {
+        const res = await fetch(`${API_URL}/transcripts/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to delete transcript");
+    },
+
     async uploadFile(token: string, file: File) {
         const formData = new FormData();
         formData.append('file', file);

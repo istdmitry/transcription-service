@@ -58,6 +58,19 @@ export default function Dashboard() {
         }
     };
 
+    const handleDelete = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this transcript?")) return;
+        try {
+            const token = localStorage.getItem("token");
+            if (token) {
+                await api.deleteTranscript(token, id);
+                setTranscripts(transcripts.filter((t) => t.id !== id));
+            }
+        } catch (err) {
+            alert("Failed to delete");
+        }
+    };
+
     return (
         <main className="min-h-screen p-8">
             <div className="max-w-6xl mx-auto">

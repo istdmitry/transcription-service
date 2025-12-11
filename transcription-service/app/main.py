@@ -4,10 +4,14 @@ from app.api import auth, transcripts, webhooks, logs
 from app.db.base import Base, engine
 from app.core.logging_config import setup_logging
 import logging
+import static_ffmpeg
 
 # Setup Logging
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# Setup FFmpeg
+static_ffmpeg.add_paths()
 
 # Create tables (For production, use Alembic)
 try:
