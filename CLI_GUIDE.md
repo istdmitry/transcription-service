@@ -33,6 +33,17 @@ Shows IDs, Status, and Filenames.
 python scripts/ide_plugin.py list
 ```
 
+### 🆕 Filter by Date
+List only today's transcripts:
+```bash
+python scripts/ide_plugin.py list --today
+```
+
+List for a specific date:
+```bash
+python scripts/ide_plugin.py list --date 2023-12-11
+```
+
 ### Get Transcript Text
 Retrieves the full text for a specific ID.
 ```bash

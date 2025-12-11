@@ -3,12 +3,10 @@ import sys
 import os
 import argparse
 import json
+from datetime import datetime
 
 # Configuration
-API_URL = os.getenv("TRANSCRIPTION_API_URL", "https://service.8hats.ai") # Production Default -- or update based on real domain
-# Fallback if domain not propagated yet:
-# API_URL = "https://transcription-service-production-6161.up.railway.app" 
-
+API_URL = os.getenv("TRANSCRIPTION_API_URL", "https://service.8hats.ai")
 API_KEY = os.getenv("TRANSCRIPTION_API_KEY")
 
 def get_headers():
@@ -18,15 +16,36 @@ def get_headers():
         sys.exit(1)
     return {'X-API-Key': API_KEY}
 
-def list_transcripts():
+def list_transcripts(date_filter=None):
     try:
         res = requests.get(f"{API_URL}/transcripts/", headers=get_headers())
         if res.status_code == 200:
             transcripts = res.json()
-            print(f"{'ID':<5} {'Status':<12} {'Filename'}")
-            print("-" * 40)
+            
+            # Filter by date if requested
+            if date_filter:
+                filtered = []
+                target_date = date_filter
+                if target_date == "today":
+                    target_date = datetime.now().strftime("%Y-%m-%d")
+                
+                print(f"Filtering for date: {target_date}")
+                
+                for t in transcripts:
+                    # Created_at format: 2023-12-11T12:34:56.789Z (ISO)
+                    if t.get('created_at', '').startswith(target_date):
+                        filtered.append(t)
+                transcripts = filtered
+
+            if not transcripts:
+                print("No transcripts found.")
+                return
+
+            print(f"{'ID':<5} {'Date':<12} {'Status':<12} {'Filename'}")
+            print("-" * 60)
             for t in transcripts:
-                print(f"{t['id']:<5} {t['status']:<12} {t['filename']}")
+                date_str = t.get('created_at', '')[:10]
+                print(f"{t['id']:<5} {date_str:<12} {t['status']:<12} {t['filename']}")
         else:
             print(f"Error listing transcripts: {res.text}")
     except Exception as e:
@@ -71,7 +90,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # List
-    subparsers.add_parser("list", help="List all transcripts")
+    list_parser = subparsers.add_parser("list", help="List all transcripts")
+    list_parser.add_argument("--date", help="Filter by date (YYYY-MM-DD)")
+    list_parser.add_argument("--today", action="store_true", help="Filter for today only")
 
     # Get
     get_parser = subparsers.add_parser("get", help="Get transcript text")
@@ -83,11 +104,14 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "list":
-        list_transcripts()
-    elif args.command == "get":
+    if getattr(args, 'command', None) == "list":
+        filter_date = args.date
+        if args.today:
+            filter_date = "today"
+        list_transcripts(filter_date)
+    elif getattr(args, 'command', None) == "get":
         get_transcript(args.id)
-    elif args.command == "upload":
+    elif getattr(args, 'command', None) == "upload":
         upload_file(args.file)
     else:
         parser.print_help()
