@@ -87,6 +87,19 @@ def upload_file(file_path):
         except Exception as e:
             print(f"Request failed: {e}")
 
+def get_server_logs(lines):
+    try:
+        res = requests.get(f"{API_URL}/logs/?lines={lines}", headers=get_headers())
+        if res.status_code == 200:
+            logs = res.json()
+            print(f"--- Server Logs (Last {lines} lines) ---")
+            for line in logs:
+                print(line)
+        else:
+            print(f"Error fetching logs: {res.text}")
+    except Exception as e:
+        print(f"Connection error: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Transcription Service CLI")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
@@ -104,6 +117,10 @@ def main():
     upload_parser = subparsers.add_parser("upload", help="Upload a new file")
     upload_parser.add_argument("file", help="Path to audio file")
 
+    # Logs
+    logs_parser = subparsers.add_parser("logs", help="Get server logs")
+    logs_parser.add_argument("--lines", type=int, default=50, help="Number of lines to retrieve")
+
     args = parser.parse_args()
 
     if getattr(args, 'command', None) == "list":
@@ -115,6 +132,8 @@ def main():
         get_transcript(args.id)
     elif getattr(args, 'command', None) == "upload":
         upload_file(args.file)
+    elif getattr(args, 'command', None) == "logs":
+        get_server_logs(args.lines)
     else:
         parser.print_help()
 

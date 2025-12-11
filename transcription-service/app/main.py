@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from app.core.config import settings
-from app.api import auth, transcripts, webhooks
+from app.api import auth, transcripts, webhooks, logs
 from app.db.base import Base, engine
+from app.core.logging_config import setup_logging
 import logging
 
-logger = logging.getLogger("uvicorn")
+# Setup Logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Create tables (For production, use Alembic)
 try:
@@ -28,6 +31,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(transcripts.router)
 app.include_router(webhooks.router)
+app.include_router(logs.router)
 
 @app.get("/")
 def read_root():

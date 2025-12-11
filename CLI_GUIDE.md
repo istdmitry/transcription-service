@@ -57,6 +57,16 @@ Uploads an audio/video file for processing.
 python scripts/ide_plugin.py upload "path/to/meeting.mp3"
 ```
 
+### 📋 Check Server Logs
+See what is happening on the server (Live Logs).
+```bash
+python scripts/ide_plugin.py logs
+```
+*Optional: Fetch more lines*
+```bash
+python scripts/ide_plugin.py logs --lines 100
+```
+
 ## Cursor AI Tip
 You can paste this file into Cursor's Chat to teach it how to use the tool for you!
 Just type: *"Read CLI_GUIDE.md and use the script to list my transcripts."*
