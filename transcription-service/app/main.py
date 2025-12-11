@@ -2,9 +2,15 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api import auth, transcripts, webhooks
 from app.db.base import Base, engine
+import logging
+
+logger = logging.getLogger("uvicorn")
 
 # Create tables (For production, use Alembic)
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.error(f"Error initializing database: {e}")
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
