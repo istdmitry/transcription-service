@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.models.user import User
 from app.schemas.token import TokenData
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token") # Endpoint relative URL
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False) # Endpoint relative URL
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 def get_current_user(
@@ -37,6 +37,10 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        raise credentials_exception
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
