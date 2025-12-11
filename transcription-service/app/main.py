@@ -12,7 +12,18 @@ try:
 except Exception as e:
     logger.error(f"Error initializing database: {e}")
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 app.include_router(auth.router)
 app.include_router(transcripts.router)
