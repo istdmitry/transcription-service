@@ -8,6 +8,7 @@ export default function Dashboard() {
     const router = useRouter();
     const [transcripts, setTranscripts] = useState<any[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [apiKey, setApiKey] = useState("");
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -16,6 +17,7 @@ export default function Dashboard() {
             return;
         }
         loadTranscripts(token);
+        api.getProfile(token).then(u => u && setApiKey(u.api_key));
     }, []);
 
     const loadTranscripts = async (token: string) => {
@@ -59,10 +61,15 @@ export default function Dashboard() {
     return (
         <main className="min-h-screen p-8">
             <div className="max-w-6xl mx-auto">
-                <header className="flex justify-between items-center mb-10">
+                <header className="flex justify-between items-end mb-10">
                     <div>
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Dashboard</h1>
-                        <p className="text-slate-400">Manage your transcripts</p>
+                        <p className="text-slate-400 mb-2">Manage your transcripts</p>
+                        {apiKey && (
+                            <div className="text-xs bg-slate-800 p-2 rounded border border-slate-700 inline-block font-mono text-slate-300">
+                                API Key: <span className="select-all text-violet-300">{apiKey}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="relative">
                         <input

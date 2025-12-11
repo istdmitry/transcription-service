@@ -31,6 +31,14 @@ export const api = {
         return res.json();
     },
 
+    async getProfile(token: string) {
+        const res = await fetch(`${API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return null;
+        return res.json();
+    },
+
     async getTranscripts(token: string) {
         const res = await fetch(`${API_URL}/transcripts/`, {
             headers: { 'Authorization': `Bearer ${token}` }
