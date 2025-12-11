@@ -1,0 +1,23 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class TranscriptBase(BaseModel):
+    pass
+
+class TranscriptCreate(TranscriptBase):
+    pass 
+    # File upload is handled via Form/UploadFile, not JSON body usually for the file itself.
+    # But metadata can be passed.
+
+class TranscriptResponse(BaseModel):
+    id: int
+    status: str
+    media_url: str
+    transcript_text: Optional[str] = None
+    created_at: datetime
+    language: str
+    error_message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
