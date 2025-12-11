@@ -50,7 +50,7 @@ def upload_transcript(
     # Or we can pass the temp file (Web servers usually store uploads in temp).
     # Ideally: Worker downloads from S3.
     # For now, we'll setup the background task to handle it.
-    background_tasks.add_task(process_transcription, new_transcript.id, s3_key, db)
+    background_tasks.add_task(process_transcription, new_transcript.id, s3_key, db, notify_user=False)
     
     return new_transcript
 
