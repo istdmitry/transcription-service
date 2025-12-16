@@ -6,9 +6,9 @@ import json
 from datetime import datetime
 
 # Configuration
-API_URL = os.getenv("TRANSCRIPTION_API_URL", "https://service.8hats.ai")
+API_URL = os.getenv("TRANSCRIPTION_API_URL", "https://enchanting-insight-production.up.railway.app")
 # Fallback if domain not propagated yet:
-# API_URL = "https://enchanting-insight-production.up.railway.app"
+# API_URL = "https://service.8hats.ai"
 API_KEY = os.getenv("TRANSCRIPTION_API_KEY")
 
 def get_headers():
