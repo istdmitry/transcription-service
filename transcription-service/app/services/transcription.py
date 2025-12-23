@@ -114,6 +114,42 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_u
         transcript.status = TranscriptStatus.COMPLETED
         db.commit()
 
+        # --- Google Drive Integration ---
+        try:
+            from app.services.gdrive import upload_to_drive
+            from datetime import datetime
+            from app.models.project import Project
+            
+            # Determine which credentials to use
+            creds = None
+            folder = None
+            
+            if transcript.project_id:
+                project = db.query(Project).get(transcript.project_id)
+                if project:
+                    creds = project.gdrive_creds
+                    folder = project.gdrive_folder
+            else:
+                user = transcript.owner
+                creds = user.gdrive_creds
+                folder = user.gdrive_folder
+
+            if creds and folder:
+                # Format: {YYYY-MM-DD} {UserEmail} {OriginalFilename}.txt
+                date_str = datetime.now().strftime("%Y-%m-%d")
+                safe_filename = os.path.basename(transcript.filename)
+                gdrive_filename = f"{date_str} {transcript.owner.email} {safe_filename}.txt"
+                
+                print(f"Uploading to GDrive: {gdrive_filename}")
+                g_file_id = upload_to_drive(gdrive_filename, result, creds, folder)
+                if g_file_id:
+                    transcript.gdrive_file_id = g_file_id
+                    db.commit()
+            
+        except Exception as e:
+            print(f"GDrive Upload Error (Non-blocking): {e}")
+        # --------------------------------
+
         # 6. Notify Telegram (Status Update Only)
         if notify_user and transcript.owner.telegram_chat_id:
             from app.services.telegram import send_message

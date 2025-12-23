@@ -2,13 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 export default function Dashboard() {
     const router = useRouter();
     const [transcripts, setTranscripts] = useState<any[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [user, setUser] = useState<any>(null);
     const [uploading, setUploading] = useState(false);
-    const [apiKey, setApiKey] = useState("");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -16,18 +18,24 @@ export default function Dashboard() {
             router.push('/');
             return;
         }
-        loadTranscripts(token);
-        api.getProfile(token).then(u => u && setApiKey(u.api_key));
+        init(token);
     }, []);
 
-    const loadTranscripts = async (token: string) => {
+    const init = async (token: string) => {
         try {
-            const data = await api.getTranscripts(token);
-            setTranscripts(data);
+            const [u, t, p] = await Promise.all([
+                api.getProfile(token),
+                api.getTranscripts(token),
+                api.getProjects(token)
+            ]);
+            setUser(u);
+            setTranscripts(t);
+            setProjects(p);
         } catch (e) {
             console.error(e);
-            // If error (e.g. 401), redirect to login
             router.push('/');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -40,7 +48,8 @@ export default function Dashboard() {
         try {
             if (token) {
                 await api.uploadFile(token, file);
-                await loadTranscripts(token); // Refresh
+                const t = await api.getTranscripts(token);
+                setTranscripts(t);
             }
         } catch (err) {
             alert("Upload failed");
@@ -49,88 +58,159 @@ export default function Dashboard() {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'completed': return 'text-green-400';
-            case 'processing': return 'text-yellow-400';
-            case 'failed': return 'text-red-400';
-            default: return 'text-slate-400';
+    const handleDelete = async (t: any) => {
+        let msg = "Are you sure you want to delete this transcript?";
+        if (t.gdrive_file_id) {
+            msg += "\n\n⚠️ WARNING: This transcript has been exported to Google Drive. Deleting it here will NOT remove it from your GDrive.";
         }
-    };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this transcript?")) return;
+        if (!confirm(msg)) return;
+
         try {
             const token = localStorage.getItem("token");
             if (token) {
-                await api.deleteTranscript(token, id);
-                setTranscripts(transcripts.filter((t) => t.id !== id));
+                await api.deleteTranscript(token, t.id);
+                setTranscripts(transcripts.filter((x) => x.id !== t.id));
             }
         } catch (err) {
             alert("Failed to delete");
         }
     };
 
+    const handleReassign = async (t: any, projectId: number | null) => {
+        if (t.gdrive_file_id) {
+            const msg = "⚠️ This transcript was already uploaded to Google Drive. Reassigning will NOT move or remove the file in the external folder.";
+            if (!confirm(msg)) return;
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+            if (token) {
+                await api.reassignTranscript(token, t.id, projectId);
+                const updated = await api.getTranscripts(token);
+                setTranscripts(updated);
+            }
+        } catch (err) {
+            alert("Failed to reassign");
+        }
+    };
+
+    if (loading) return <div className="p-20 text-center text-slate-400">Loading your workspace...</div>;
+
     return (
-        <main className="min-h-screen p-8">
-            <div className="max-w-6xl mx-auto">
-                <header className="flex justify-between items-end mb-10">
+        <main className="min-h-screen p-8 bg-[#0a0c10] text-[#c9d1d9]">
+            <div className="max-w-7xl mx-auto">
+                <header className="flex justify-between items-start mb-12">
                     <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Dashboard</h1>
-                        <p className="text-slate-400 mb-2">Manage your transcripts</p>
-                        {apiKey && (
-                            <div className="text-xs bg-slate-800 p-2 rounded border border-slate-700 inline-block font-mono text-slate-300">
-                                API Key: <span className="select-all text-violet-300">{apiKey}</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-4 mb-2">
+                            <h1 className="text-4xl font-extrabold tracking-tight text-white">Workspace</h1>
+                            {user?.is_admin && (
+                                <button onClick={() => router.push('/admin')} className="text-xs px-2 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded hover:bg-amber-500/20 transition-colors">
+                                    ADMIN PANEL
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-slate-400">Manage and organize your transcriptions</p>
                     </div>
-                    <div className="relative">
-                        <input
-                            type="file"
-                            id="file-upload"
-                            className="hidden"
-                            onChange={handleUpload}
-                            accept="audio/*,video/*"
-                            disabled={uploading}
-                        />
-                        <label htmlFor="file-upload">
-                            <div className={`cursor-pointer px-6 py-3 rounded-lg font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-500/20 ${uploading ? 'opacity-50' : ''}`}>
-                                {uploading ? 'Uploading...' : '+ Upload New File'}
-                            </div>
-                        </label>
+
+                    <div className="flex gap-3">
+                        <Button variant="outline" onClick={() => router.push('/instructions')} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                            Setup Instructions
+                        </Button>
+                        <div className="relative">
+                            <input type="file" id="file-upload" className="hidden" onChange={handleUpload} accept="audio/*,video/*" disabled={uploading} />
+                            <label htmlFor="file-upload">
+                                <div className={`cursor-pointer px-6 py-2 rounded font-bold bg-[#238636] hover:bg-[#2ea043] text-white transition-all shadow-lg ${uploading ? 'opacity-50' : ''}`}>
+                                    {uploading ? 'UPLOADING...' : 'NEW TRANSCRIPTION'}
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {transcripts.map((t) => (
-                        <Card key={t.id} className="hover:bg-slate-800/50 transition-colors group">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`text-xs font-mono px-2 py-1 rounded bg-slate-800 ${getStatusColor(t.status)}`}>
-                                    {t.status.toUpperCase()}
-                                </div>
-                                <span className="text-slate-500 text-xs">{new Date(t.created_at).toLocaleDateString()}</span>
-                            </div>
-                            <h3 className="font-semibold text-lg text-slate-100 mb-2 truncate" title={t.filename}>
-                                {t.filename}
-                            </h3>
-                            <p className="text-slate-400 text-sm line-clamp-3 mb-4 h-15">
-                                {t.transcript_text || "Waiting for transcription..."}
-                            </p>
-                            <div className="flex justify-end">
-                                <Button variant="outline" className="text-xs py-1" onClick={() => router.push(`/transcripts/${t.id}`)}>
-                                    View Details
-                                </Button>
-                            </div>
-                        </Card>
-                    ))}
+                <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-[#161b22] border-b border-[#30363d] text-slate-400 text-sm">
+                                <th className="px-6 py-4 font-semibold">Date</th>
+                                <th className="px-6 py-4 font-semibold">Filename</th>
+                                <th className="px-6 py-4 font-semibold">Project / Assignment</th>
+                                <th className="px-6 py-4 font-semibold">Status</th>
+                                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#30363d]">
+                            {transcripts.map((t) => (
+                                <tr key={t.id} className="hover:bg-[#161b22]/50 transition-colors group">
+                                    <td className="px-6 py-4 text-xs font-mono text-slate-500 whitespace-nowrap">
+                                        {new Date(t.created_at).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="font-semibold text-slate-100 truncate max-w-[300px]" title={t.filename}>
+                                            {t.filename}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <select
+                                            value={t.project_id || ""}
+                                            onChange={(e) => handleReassign(t, e.target.value ? parseInt(e.target.value) : null)}
+                                            className="bg-[#0d1117] border border-[#30363d] text-sm rounded px-3 py-1 text-slate-300 focus:ring-1 focus:ring-violet-500 outline-none"
+                                        >
+                                            <option value="">Personal Note</option>
+                                            {projects.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full ${t.status === 'completed' ? 'bg-green-500' :
+                                                    t.status === 'processing' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+                                                }`} />
+                                            {t.status.toUpperCase()}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => router.push(`/transcripts/${t.id}`)}
+                                                className="text-xs text-slate-400 hover:text-white underline underline-offset-4"
+                                            >
+                                                DETAILS
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(t)}
+                                                className="text-xs text-red-500/70 hover:text-red-400 ml-4"
+                                            >
+                                                DELETE
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {transcripts.length === 0 && (
+                        <div className="text-center py-24 text-slate-500">
+                            <div className="text-5xl mb-4">📝</div>
+                            <p className="text-lg">No transcriptions found in this workspace.</p>
+                            <p className="text-sm">Upload a file or use the Telegram bot to get started.</p>
+                        </div>
+                    )}
                 </div>
 
-                {transcripts.length === 0 && (
-                    <div className="text-center py-20 text-slate-500">
-                        <p>No transcripts found. Upload a file to get started.</p>
+                <footer className="mt-12 pt-8 border-t border-[#30363d] flex justify-between text-xs text-slate-500">
+                    <div>
+                        Connected as: <span className="text-slate-300">{user?.email}</span>
                     </div>
-                )}
+                    <div className="flex gap-6">
+                        <span>API Status: Online</span>
+                        <span>Projects Active: {projects.length}</span>
+                    </div>
+                </footer>
             </div>
         </main>
     );
 }
+

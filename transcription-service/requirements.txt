@@ -14,4 +14,7 @@ pydantic-settings>=2.1.0
 requests
 email-validator
 bcrypt==4.0.1
-static-ffmpeg
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+cryptography==42.0.5

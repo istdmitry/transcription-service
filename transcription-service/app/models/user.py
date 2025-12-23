@@ -12,4 +12,10 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     api_key = Column(String, unique=True, index=True, nullable=True)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    
+    # Personal GDrive (Encrypted)
+    gdrive_creds = Column(Text, nullable=True)
+    gdrive_folder = Column(String, nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())

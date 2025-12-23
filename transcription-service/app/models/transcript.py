@@ -25,6 +25,10 @@ class Transcript(Base):
     transcript_text = Column(Text, nullable=True)
     language = Column(String, default="en") # en, ru
     
+    # GDrive Tracking
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    gdrive_file_id = Column(String, nullable=True)
+    
     # Status
     status = Column(Enum(TranscriptStatus), default=TranscriptStatus.PENDING)
     error_message = Column(String, nullable=True)

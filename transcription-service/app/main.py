@@ -1,17 +1,11 @@
 from fastapi import FastAPI
 from app.core.config import settings
-from app.api import auth, transcripts, webhooks, logs
+from app.api import auth, transcripts, webhooks, logs, projects, admin
 from app.db.base import Base, engine
 from app.core.logging_config import setup_logging
-import logging
-import static_ffmpeg
-
 # Setup Logging
 setup_logging()
 logger = logging.getLogger(__name__)
-
-# Setup FFmpeg
-static_ffmpeg.add_paths()
 
 # Create tables (For production, use Alembic)
 try:
@@ -33,9 +27,11 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(transcripts.router)
-app.include_router(webhooks.router)
-app.include_router(logs.router)
+app.include_router(transcripts.router, prefix="/transcripts", tags=["transcripts"])
+app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+app.include_router(logs.router, prefix="/logs", tags=["logs"])
+app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 @app.get("/")
 def read_root():

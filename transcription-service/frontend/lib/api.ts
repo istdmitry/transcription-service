@@ -74,5 +74,54 @@ export const api = {
 
         if (!res.ok) throw new Error('Upload failed');
         return res.json();
+    },
+
+    async reassignTranscript(token: string, id: number, project_id: number | null) {
+        const res = await fetch(`${API_URL}/transcripts/${id}/reassign`, {
+            method: 'PATCH',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ project_id })
+        });
+        if (!res.ok) throw new Error('Reassign failed');
+        return res.json();
+    },
+
+    // --- Projects ---
+    async getProjects(token: string) {
+        const res = await fetch(`${API_URL}/projects/`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
+    async createProject(token: string, data: any) {
+        const res = await fetch(`${API_URL}/projects/`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+
+    // --- Admin ---
+    async getAdminUsers(token: string) {
+        const res = await fetch(`${API_URL}/admin/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
+    async getAdminStats(token: string) {
+        const res = await fetch(`${API_URL}/admin/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
     }
+
 };
