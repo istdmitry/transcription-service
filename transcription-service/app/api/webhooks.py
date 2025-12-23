@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
-from app.db.base import get_db
+from app.db.session import get_db
+
 from app.services.telegram import handle_telegram_update
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])

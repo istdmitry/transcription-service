@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.db.base import SessionLocal
+from app.db.session import get_db
 from app.models.user import User
 from app.models.project import Project, ProjectMember
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetailResponse, ProjectMemberBase
@@ -10,12 +10,6 @@ from app.core.crypto import encrypt_data
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 def check_admin(user: User):
     if not user.is_admin:
