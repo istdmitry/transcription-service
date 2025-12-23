@@ -1,10 +1,9 @@
 [build]
 builder = "nixpacks"
-# Switch to standard pip, simpler for Railway
-buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "bash start.sh"
 restartPolicyType = "ON_FAILURE"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
+
