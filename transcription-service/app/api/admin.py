@@ -1,9 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
-from app.db.session import get_db
+from typing import List, Optional
+from datetime import datetime
+from pydantic import BaseModel
 
+from app.db.session import get_db
+from app.models.user import User
+from app.models.transcript import Transcript
+from app.models.project import Project, ProjectMember
+from app.api.auth import get_current_user
+
+router = APIRouter()
 
 def check_admin(user: User):
     if not user.is_admin:
