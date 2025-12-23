@@ -5,7 +5,7 @@ Welcome to the Transcription Service! This guide will help you register, upload 
 ## 1. Registration
 
 ### Web Registration
-1. Visit the web dashboard at [https://enchanting-insight-production.up.railway.app](https://enchanting-insight-production.up.railway.app).
+1. Visit the web dashboard at [https://service.8hats.ai](https://service.8hats.ai).
 2. Click on **Register**.
 3. Enter your **Email** and **Password**.
 4. Once registered, you will be logged in and can access your **API Key** from the dashboard. You will need this key for the CLI.
