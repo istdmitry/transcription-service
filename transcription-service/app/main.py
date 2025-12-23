@@ -40,4 +40,5 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    import time
+    return {"status": "ok", "version": "1.1.0", "timestamp": time.time()}
