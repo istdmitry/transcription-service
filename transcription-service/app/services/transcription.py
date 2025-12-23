@@ -9,7 +9,12 @@ import tempfile
 def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_user: bool = True):
     """
     Background task to process transcription using OpenAI Whisper.
+    Supports smart compression for large files > 25MB.
     """
+    tmp_path = None
+    final_path = None
+    transcript = None
+    
     try:
         # 1. Fetch transcript record
         transcript = db.query(Transcript).filter(Transcript.id == transcript_id).first()
@@ -31,37 +36,65 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_u
         if file_size == 0:
             raise ValueError("Downloaded file is empty (0 bytes). Upload might have failed.")
         
-        # 3. Convert to MP3 if needed (FFmpeg)
-        # OpenAI Whisper limit is 25MB. Audio conversion usually shrinks video significantly.
-        # We always convert to mp3 for consistency and size reduction.
+        # 3. Audio Processing Logic
+        # OpenAI Limit: 25 MB (26,214,400 bytes)
+        OPENAI_LIMIT = 25 * 1024 * 1024
+        
+        # Supported formats by OpenAI Whisper
+        SUPPORTED_EXTENSIONS = {'.m4a', '.mp3', '.wav', '.mpeg', '.mpga', '.mp4', '.webm'}
+        file_ext = os.path.splitext(tmp_path)[1].lower()
         
         import subprocess
-        mp3_path = tmp_path + ".mp3"
-        
-        try:
-            print(f"Converting {tmp_path} to {mp3_path}...")
-            # ffmpeg -i input -vn -acodec libmp3lame -q:a 4 output.mp3
-            # -vn: disable video
-            # -y: overwrite
-            # -ac 1: mono (optional, good for speech)
-            subprocess.run([
-                "ffmpeg", "-i", tmp_path, 
-                "-vn", "-acodec", "libmp3lame", "-q:a", "4", "-y", 
-                mp3_path
-            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-            
-            # Use the new MP3 file
-            final_path = mp3_path
-            print(f"Conversion successful. New size: {os.path.getsize(final_path)} bytes")
-            
-        except FileNotFoundError:
-            print("FFmpeg not found. Skipping conversion (sending original file).")
-            final_path = tmp_path
-        except Exception as e:
-            print(f"FFmpeg conversion failed: {e}. Trying original file.")
-            final_path = tmp_path
 
-        # 3. Call OpenAI Whisper
+        # DECISION: Skip conversion?
+        if file_ext in SUPPORTED_EXTENSIONS and file_size < OPENAI_LIMIT:
+            print(f"File is supported {file_ext} and under 25MB. Skipping conversion.")
+            final_path = tmp_path
+        else:
+            # Must convert or compress
+            print(f"File needs processing (Size: {file_size}, Ext: {file_ext})")
+            mp3_path = tmp_path + ".mp3"
+            
+            try:
+                # ATTEMPT 1: Standard Conversion (Quality 4 ~ 128-165 kbps VBR)
+                print(f"Attempt 1: Standard conversion to {mp3_path}...")
+                subprocess.run([
+                    "ffmpeg", "-i", tmp_path, 
+                    "-vn", "-acodec", "libmp3lame", "-q:a", "4", "-y", 
+                    mp3_path
+                ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                
+                final_path = mp3_path
+                new_size = os.path.getsize(final_path)
+                print(f"Standard conversion result: {new_size} bytes")
+
+                # ATTEMPT 2: Aggressive Compression if still > 25MB
+                if new_size > OPENAI_LIMIT:
+                    print("Result still > 25MB. Attempting aggressive compression (32k mono)...")
+                    # -b:a 32k : Constant bitrate 32kbps
+                    # -ac 1    : Mono
+                    subprocess.run([
+                        "ffmpeg", "-i", tmp_path, 
+                        "-vn", "-acodec", "libmp3lame", "-b:a", "32k", "-ac", "1", "-y", 
+                        mp3_path
+                    ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                    
+                    final_path = mp3_path
+                    new_size = os.path.getsize(final_path)
+                    print(f"Aggressive conversion result: {new_size} bytes")
+                
+                if new_size > OPENAI_LIMIT:
+                    raise ValueError(f"File is too large ({new_size} bytes) even after aggressive compression. Please upload a shorter file.")
+
+            except FileNotFoundError:
+                print("FFmpeg not found. Cannot convert.")
+                # If we can't convert, we just try sending the original and hope for the best
+                final_path = tmp_path
+            except Exception as e:
+                print(f"FFmpeg conversion failed: {e}. Trying original file.")
+                final_path = tmp_path
+
+        # 4. Call OpenAI Whisper
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
         try:
@@ -73,23 +106,28 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_u
                 )
         finally:
             # Cleanup extra file if created
-            if final_path != tmp_path and os.path.exists(final_path):
+            if final_path and final_path != tmp_path and os.path.exists(final_path):
                 os.remove(final_path)
         
-        # 4. Update DB
+        # 5. Update DB
         transcript.transcript_text = result
         transcript.status = TranscriptStatus.COMPLETED
         db.commit()
 
-        # 5. Notify Telegram (Status Update Only)
+        # 6. Notify Telegram (Status Update Only)
         if notify_user and transcript.owner.telegram_chat_id:
             from app.services.telegram import send_message
             send_message(transcript.owner.telegram_chat_id, "✅ Transcription complete! View it on your dashboard.")
 
         # Cleanup
-        os.remove(tmp_path)
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
         
     except Exception as e:
+        # Cleanup
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
         if transcript:
             transcript.status = TranscriptStatus.FAILED
             transcript.error_message = str(e)
