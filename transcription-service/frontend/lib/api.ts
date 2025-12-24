@@ -191,6 +191,38 @@ export const api = {
         });
         if (!res.ok) throw new Error('Failed to update Google Drive settings');
         return res.json();
+    },
+
+    async testMyGDrive(token: string, data: { gdrive_creds: string, gdrive_folder: string, gdrive_email?: string }) {
+        const res = await fetch(`${API_URL}/auth/me/gdrive/test`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err?.detail?.message || err?.detail || 'Drive test failed');
+        }
+        return res.json();
+    },
+
+    async testProjectGDrive(token: string, projectId: number, data: { gdrive_creds: string, gdrive_folder: string, gdrive_email?: string }) {
+        const res = await fetch(`${API_URL}/projects/${projectId}/gdrive/test`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err?.detail?.message || err?.detail || 'Drive test failed');
+        }
+        return res.json();
     }
 
 };

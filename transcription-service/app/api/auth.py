@@ -14,12 +14,19 @@ from pydantic import BaseModel
 from typing import Optional
 from app.core.crypto import encrypt_data
 from app.api.deps import get_current_user
+from app.services.gdrive import test_drive_upload
+import time
 
 router = APIRouter()
 
 class UserGDriveUpdate(BaseModel):
     gdrive_creds: Optional[str] = None
     gdrive_folder: Optional[str] = None
+    gdrive_email: Optional[str] = None
+
+class GDriveTestRequest(BaseModel):
+    gdrive_creds: str
+    gdrive_folder: str
     gdrive_email: Optional[str] = None
 
 @router.post("/register", response_model=UserResponse)
@@ -92,3 +99,24 @@ def update_personal_gdrive(
     db.refresh(current_user)
     current_user.has_gdrive_creds = bool(current_user.gdrive_creds)
     return current_user
+
+@router.post("/me/gdrive/test")
+def test_personal_gdrive(
+    payload: GDriveTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not payload.gdrive_creds or not payload.gdrive_folder:
+        raise HTTPException(status_code=400, detail="Missing credentials or folder ID")
+
+    ts = int(time.time())
+    filename = f"test_transcription_service_{ts}.txt"
+    content = f"Test upload from Transcription Service at {ts}. If you see this file, integration works."
+    ok, err, file_id, sa_email = test_drive_upload(payload.gdrive_creds, payload.gdrive_folder, filename, content)
+    if ok:
+        return {"ok": True, "file_id": file_id, "filename": filename}
+
+    hint = None
+    if sa_email:
+        hint = f"Share the folder with service account: {sa_email}"
+    raise HTTPException(status_code=400, detail={"ok": False, "message": err, "hint": hint})

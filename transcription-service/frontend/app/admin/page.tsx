@@ -15,6 +15,7 @@ export default function AdminPanel() {
     const [manageProjectId, setManageProjectId] = useState<number | null>(null);
     const [manageUserId, setManageUserId] = useState<number | null>(null);
     const [manageUserAdmin, setManageUserAdmin] = useState<boolean>(false);
+    const [projectTestStatus, setProjectTestStatus] = useState<{ status: 'idle' | 'success' | 'error', message?: string }>({ status: 'idle' });
     const [loading, setLoading] = useState(true);
     const [savingProject, setSavingProject] = useState(false);
     const [assigning, setAssigning] = useState(false);
@@ -115,6 +116,26 @@ export default function AdminPanel() {
             alert("Failed to update project drive");
         } finally {
             setUpdatingDrive(false);
+        }
+    };
+
+    const handleTestProjectDrive = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        if (!projectDrive.projectId || !projectDrive.gdrive_creds || !projectDrive.gdrive_folder) {
+            setProjectTestStatus({ status: 'error', message: 'Select project and provide JSON + Folder ID first.' });
+            return;
+        }
+        try {
+            setProjectTestStatus({ status: 'idle' });
+            const res = await api.testProjectGDrive(token, parseInt(projectDrive.projectId), {
+                gdrive_creds: projectDrive.gdrive_creds,
+                gdrive_folder: projectDrive.gdrive_folder,
+                gdrive_email: projectDrive.gdrive_email || undefined
+            });
+            setProjectTestStatus({ status: 'success', message: `Uploaded test file: ${res.filename}. Check the folder.` });
+        } catch (e: any) {
+            setProjectTestStatus({ status: 'error', message: e?.message || 'Drive test failed' });
         }
     };
 
@@ -351,6 +372,7 @@ export default function AdminPanel() {
                             <Button onClick={handleUpdateProjectDrive} disabled={updatingDrive}>
                                 {updatingDrive ? "Saving..." : "Save"}
                             </Button>
+                            <Button variant="outline" onClick={handleTestProjectDrive}>Test</Button>
                             <button
                                 className="text-xs text-slate-400 hover:text-white"
                                 onClick={() => setManageProjectId(null)}
@@ -359,6 +381,16 @@ export default function AdminPanel() {
                             </button>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-2">Share the folder with the service account email to enable uploads.</p>
+                        {projectTestStatus.status === 'success' && (
+                            <div className="mt-3 text-xs text-green-500 bg-green-500/10 border border-green-500/20 rounded px-3 py-2">
+                                {projectTestStatus.message}
+                            </div>
+                        )}
+                        {projectTestStatus.status === 'error' && (
+                            <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                                {projectTestStatus.message}
+                            </div>
+                        )}
                     </div>
                 )}
 

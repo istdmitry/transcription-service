@@ -15,6 +15,7 @@ export default function Dashboard() {
     const [filterProject, setFilterProject] = useState<string>("");
     const [sortBy, setSortBy] = useState<string>("created_at_desc");
     const [personalDrive, setPersonalDrive] = useState({ folder: '', creds: '', email: '' });
+    const [driveTestStatus, setDriveTestStatus] = useState<{ status: 'idle' | 'success' | 'error', message?: string }>({ status: 'idle' });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -150,6 +151,26 @@ export default function Dashboard() {
         }
     };
 
+    const handleTestPersonalDrive = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        if (!personalDrive.creds || !personalDrive.folder) {
+            setDriveTestStatus({ status: 'error', message: 'Add JSON and Folder ID first.' });
+            return;
+        }
+        try {
+            setDriveTestStatus({ status: 'idle' });
+            const res = await api.testMyGDrive(token, {
+                gdrive_creds: personalDrive.creds,
+                gdrive_folder: personalDrive.folder,
+                gdrive_email: personalDrive.email || undefined
+            });
+            setDriveTestStatus({ status: 'success', message: `Uploaded test file: ${res.filename}. Check the folder.` });
+        } catch (e: any) {
+            setDriveTestStatus({ status: 'error', message: e?.message || 'Drive test failed' });
+        }
+    };
+
     if (loading && !user) return <div className="p-20 text-center text-slate-400">Loading your workspace...</div>;
 
     return (
@@ -197,7 +218,10 @@ export default function Dashboard() {
                                 {user?.has_gdrive_creds ? 'Service account stored' : 'Credentials not connected'}
                             </div>
                         </div>
-                        <Button onClick={handleSavePersonalDrive}>Save</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleTestPersonalDrive}>Test</Button>
+                            <Button onClick={handleSavePersonalDrive}>Save</Button>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input
@@ -221,6 +245,16 @@ export default function Dashboard() {
                         />
                     </div>
                     <p className="text-[11px] text-slate-500 mt-2">Leave credentials empty to keep existing. Folder determines where personal transcripts are exported.</p>
+                    {driveTestStatus.status === 'success' && (
+                        <div className="mt-3 text-xs text-green-500 bg-green-500/10 border border-green-500/20 rounded px-3 py-2">
+                            {driveTestStatus.message}
+                        </div>
+                    )}
+                    {driveTestStatus.status === 'error' && (
+                        <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                            {driveTestStatus.message}
+                        </div>
+                    )}
                 </div>
 
                 {/* Filters */}
