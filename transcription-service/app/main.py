@@ -24,8 +24,9 @@ try:
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_creds TEXT"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_folder VARCHAR"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id)"))
             conn.commit()
-            logger.info("Auto-migration completed: Added missing columns to users table")
+            logger.info("Auto-migration completed: Added missing columns to users and transcripts tables")
         except Exception as e:
             logger.warning(f"Auto-migration skipped or failed: {e}")
             
