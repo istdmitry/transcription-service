@@ -79,3 +79,37 @@ def read_root():
 def health_check():
     import time
     return {"status": "ok", "version": "1.1.0", "timestamp": time.time()}
+
+@app.get("/debug-admin")
+def debug_admin(email: str = "ist.dmitry@gmail.com"):
+    from app.db.session import SessionLocal
+    from app.models.user import User
+    from sqlalchemy import text
+    
+    db = SessionLocal()
+    try:
+        # Check Columns
+        result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'transcripts'"))
+        cols = [r[0] for r in result]
+        
+        # Check User
+        user = db.query(User).filter(User.email == email).first()
+        user_info = "Not Found"
+        if user:
+            user_info = {"id": user.id, "email": user.email, "is_admin": user.is_admin}
+            
+            # Force Fix
+            if not user.is_admin:
+                user.is_admin = True
+                db.commit()
+                db.refresh(user)
+                user_info["fixed_is_admin"] = True
+                
+        return {
+            "columns": cols,
+            "user": user_info
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        db.close()
