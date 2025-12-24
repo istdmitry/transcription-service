@@ -7,7 +7,7 @@ from app.models.project import Project, ProjectMember
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetailResponse, ProjectMemberBase
 from app.api.auth import get_current_user
 from app.core.crypto import encrypt_data
-from app.services.gdrive import test_drive_upload
+from app.services.gdrive import test_drive_upload, test_drive_upload_encrypted
 import time
 from pydantic import BaseModel
 
@@ -136,7 +136,7 @@ def add_member(
     return {"message": "Member added"}
 
 class ProjectGDriveTest(BaseModel):
-    gdrive_creds: str
+    gdrive_creds: Optional[str] = None
     gdrive_folder: str
     gdrive_email: Optional[str] = None
 
@@ -148,13 +148,19 @@ def test_project_gdrive(
     current_user: User = Depends(get_current_user)
 ):
     check_admin(current_user)
-    if not payload.gdrive_creds or not payload.gdrive_folder:
-        raise HTTPException(status_code=400, detail="Missing credentials or folder ID")
+    if not payload.gdrive_folder:
+        raise HTTPException(status_code=400, detail="Missing folder ID")
 
     ts = int(time.time())
     filename = f"test_transcription_service_{ts}.txt"
     content = f"Test upload from Transcription Service at {ts}. If you see this file, integration works."
-    ok, err, file_id, sa_email = test_drive_upload(payload.gdrive_creds, payload.gdrive_folder, filename, content)
+    if payload.gdrive_creds:
+        ok, err, file_id, sa_email = test_drive_upload(payload.gdrive_creds, payload.gdrive_folder, filename, content)
+    else:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project or not project.gdrive_creds:
+            raise HTTPException(status_code=400, detail={"ok": False, "message": "Missing credentials. Paste JSON or save credentials first."})
+        ok, err, file_id, sa_email = test_drive_upload_encrypted(project.gdrive_creds, payload.gdrive_folder, filename, content)
     if ok:
         return {"ok": True, "file_id": file_id, "filename": filename}
 

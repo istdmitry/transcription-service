@@ -7,6 +7,13 @@ import io
 
 from app.core.crypto import decrypt_data
 
+def extract_service_account_email(json_creds: str):
+    try:
+        info = json.loads(json_creds)
+        return info.get("client_email")
+    except Exception:
+        return None
+
 def get_drive_service(encrypted_creds: str):
     """
     Authenticates with Google Drive API using decrypted Service Account JSON.
@@ -96,11 +103,48 @@ def test_drive_upload(json_creds: str, folder_id: str, filename: str, content: s
     if not service:
         return False, f"Invalid JSON key or auth error: {auth_err}", None, None
 
+    sa_email = extract_service_account_email(json_creds)
+
+    if not folder_id:
+        return False, "Missing folder ID", None, sa_email
+
     try:
-        info = json.loads(json_creds)
-        sa_email = info.get("client_email")
-    except Exception:
-        sa_email = None
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id],
+            'mimeType': 'text/plain'
+        }
+        media = MediaIoBaseUpload(
+            io.BytesIO(content.encode('utf-8')),
+            mimetype='text/plain',
+            resumable=True
+        )
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        file_id = file.get('id')
+        return True, None, file_id, sa_email
+    except Exception as e:
+        return False, str(e), None, sa_email
+
+def test_drive_upload_encrypted(encrypted_creds: str, folder_id: str, filename: str, content: str):
+    """
+    Attempts to upload a test file using encrypted JSON credentials and folder.
+    Returns (ok, error_message, file_id, service_account_email)
+    """
+    if not encrypted_creds:
+        return False, "Missing credentials", None, None
+
+    json_creds = decrypt_data(encrypted_creds)
+    if not json_creds:
+        return False, "Invalid JSON key or auth error", None, None
+
+    sa_email = extract_service_account_email(json_creds)
+    service = get_drive_service(encrypted_creds)
+    if not service:
+        return False, "Invalid JSON key or auth error", None, sa_email
 
     if not folder_id:
         return False, "Missing folder ID", None, sa_email

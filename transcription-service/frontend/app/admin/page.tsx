@@ -16,6 +16,8 @@ export default function AdminPanel() {
     const [manageUserId, setManageUserId] = useState<number | null>(null);
     const [manageUserAdmin, setManageUserAdmin] = useState<boolean>(false);
     const [projectTestStatus, setProjectTestStatus] = useState<{ status: 'idle' | 'success' | 'error', message?: string }>({ status: 'idle' });
+    const [projectCredsSaved, setProjectCredsSaved] = useState<boolean>(false);
+    const [projectSaveStatus, setProjectSaveStatus] = useState<{ status: 'idle' | 'success' | 'error', message?: string }>({ status: 'idle' });
     const [loading, setLoading] = useState(true);
     const [savingProject, setSavingProject] = useState(false);
     const [assigning, setAssigning] = useState(false);
@@ -111,9 +113,10 @@ export default function AdminPanel() {
             setProjects(refreshed);
             setProjectDrive({ projectId: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
             setManageProjectId(null);
-            alert("Drive settings updated");
+            setProjectCredsSaved(projectCredsSaved || !!projectDrive.gdrive_creds);
+            setProjectSaveStatus({ status: 'success', message: 'Saved. Credentials are stored encrypted.' });
         } catch (e) {
-            alert("Failed to update project drive");
+            setProjectSaveStatus({ status: 'error', message: 'Failed to update project drive.' });
         } finally {
             setUpdatingDrive(false);
         }
@@ -122,14 +125,14 @@ export default function AdminPanel() {
     const handleTestProjectDrive = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
-        if (!projectDrive.projectId || !projectDrive.gdrive_creds || !projectDrive.gdrive_folder) {
-            setProjectTestStatus({ status: 'error', message: 'Select project and provide JSON + Folder ID first.' });
+        if (!projectDrive.projectId || !projectDrive.gdrive_folder) {
+            setProjectTestStatus({ status: 'error', message: 'Select project and provide Folder ID first.' });
             return;
         }
         try {
             setProjectTestStatus({ status: 'idle' });
             const res = await api.testProjectGDrive(token, parseInt(projectDrive.projectId), {
-                gdrive_creds: projectDrive.gdrive_creds,
+                gdrive_creds: projectDrive.gdrive_creds || undefined,
                 gdrive_folder: projectDrive.gdrive_folder,
                 gdrive_email: projectDrive.gdrive_email || undefined
             });
@@ -137,6 +140,11 @@ export default function AdminPanel() {
         } catch (e: any) {
             setProjectTestStatus({ status: 'error', message: e?.message || 'Drive test failed' });
         }
+    };
+
+    const handleSaveAndTestProjectDrive = async () => {
+        await handleUpdateProjectDrive();
+        await handleTestProjectDrive();
     };
 
     const handleDeleteUser = async (id: number) => {
@@ -328,6 +336,9 @@ export default function AdminPanel() {
                                                         gdrive_email: p.gdrive_email || '',
                                                         gdrive_creds: ''
                                                     });
+                                                    setProjectCredsSaved(!!p.has_gdrive_creds);
+                                                    setProjectSaveStatus({ status: 'idle' });
+                                                    setProjectTestStatus({ status: 'idle' });
                                                 }}
                                             >
                                                 Manage
@@ -368,11 +379,20 @@ export default function AdminPanel() {
                                 onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_creds: e.target.value })}
                             />
                         </div>
+                        <div className="mt-3 text-[11px] text-slate-500">
+                            Paste JSON only if you want to add/update credentials. Test can be run before Save.
+                        </div>
+                        <div className="mt-3 text-xs">
+                            <span className={`inline-flex px-2 py-0.5 rounded border ${projectCredsSaved ? 'text-green-500 border-green-500/30 bg-green-500/10' : 'text-slate-400 border-slate-600/30 bg-slate-800/40'}`}>
+                                Credentials: {projectCredsSaved ? 'Saved' : 'Missing'}
+                            </span>
+                        </div>
                         <div className="mt-4 flex gap-3">
                             <Button onClick={handleUpdateProjectDrive} disabled={updatingDrive}>
                                 {updatingDrive ? "Saving..." : "Save"}
                             </Button>
                             <Button variant="outline" onClick={handleTestProjectDrive}>Test</Button>
+                            <Button variant="outline" onClick={handleSaveAndTestProjectDrive}>Save + Test</Button>
                             <button
                                 className="text-xs text-slate-400 hover:text-white"
                                 onClick={() => setManageProjectId(null)}
@@ -381,6 +401,16 @@ export default function AdminPanel() {
                             </button>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-2">Share the folder with the service account email to enable uploads.</p>
+                        {projectSaveStatus.status === 'success' && (
+                            <div className="mt-3 text-xs text-green-500 bg-green-500/10 border border-green-500/20 rounded px-3 py-2">
+                                {projectSaveStatus.message}
+                            </div>
+                        )}
+                        {projectSaveStatus.status === 'error' && (
+                            <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                                {projectSaveStatus.message}
+                            </div>
+                        )}
                         {projectTestStatus.status === 'success' && (
                             <div className="mt-3 text-xs text-green-500 bg-green-500/10 border border-green-500/20 rounded px-3 py-2">
                                 {projectTestStatus.message}
