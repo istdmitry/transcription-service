@@ -54,8 +54,14 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # frontends use bearer tokens, not cookies
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://service.8hats.ai",
+        "https://enchanting-insight-production.up.railway.app",
+        "https://transcription-service-production-6161.up.railway.app",
+    ],
+    allow_origin_regex="https://.*",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
