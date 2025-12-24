@@ -56,9 +56,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
-    # Attach non-sensitive flags for the frontend
-    current_user.has_gdrive_creds = bool(current_user.gdrive_creds)
-    return current_user
+    # Build explicit response to add computed flags without mutating the model instance
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        phone_number=current_user.phone_number,
+        is_active=current_user.is_active,
+        api_key=current_user.api_key,
+        is_admin=current_user.is_admin,
+        gdrive_folder=current_user.gdrive_folder,
+        has_gdrive_creds=bool(current_user.gdrive_creds)
+    )
 
 @router.patch("/me/gdrive", response_model=UserResponse)
 def update_personal_gdrive(
