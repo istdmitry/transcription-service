@@ -169,6 +169,16 @@ export const api = {
         return res.json();
     },
 
+    async setUserAdmin(token: string, id: number, is_admin: boolean) {
+        const res = await fetch(`${API_URL}/admin/users/${id}/admin`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_admin })
+        });
+        if (!res.ok) throw new Error('Failed to update admin flag');
+        return res.json();
+    },
+
     // --- Personal GDrive ---
     async updateMyGDrive(token: string, data: { gdrive_creds?: string, gdrive_folder?: string, gdrive_email?: string }) {
         const res = await fetch(`${API_URL}/auth/me/gdrive`, {

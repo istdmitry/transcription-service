@@ -130,6 +130,18 @@ export default function AdminPanel() {
         }
     };
 
+    const handleToggleAdmin = async (u: any) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            await api.setUserAdmin(token, u.id, !u.is_admin);
+            const refreshed = await api.getAdminUsers(token);
+            setUsers(refreshed);
+        } catch (e) {
+            alert("Failed to update admin flag");
+        }
+    };
+
     if (loading) return <div className="p-20 text-center text-slate-400">Loading Admin Panel...</div>;
 
     return (
@@ -307,7 +319,7 @@ export default function AdminPanel() {
                 {manageProjectId && (
                     <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-6 mb-10">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-white">Manage Project Drive</h3>
+                            <h3 className="text-lg font-bold text-white">Manage Project</h3>
                             <button className="text-xs text-slate-400 hover:text-white" onClick={() => setManageProjectId(null)}>Close</button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -333,7 +345,7 @@ export default function AdminPanel() {
                         </div>
                         <div className="mt-4 flex gap-3">
                             <Button onClick={handleUpdateProjectDrive} disabled={updatingDrive}>
-                                {updatingDrive ? "Saving..." : "Save Drive Settings"}
+                                {updatingDrive ? "Saving..." : "Save"}
                             </Button>
                             <button
                                 className="text-xs text-slate-400 hover:text-white"
@@ -357,6 +369,7 @@ export default function AdminPanel() {
                                 <th className="px-6 py-4">Phone</th>
                                 <th className="px-6 py-4">Projects</th>
                                 <th className="px-6 py-4">Activity</th>
+                                <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -388,9 +401,21 @@ export default function AdminPanel() {
                                             <div className="text-[10px] text-red-400">Deleted: {new Date(u.deleted_at).toLocaleDateString()}</div>
                                         )}
                                     </td>
+                                    <td className="px-6 py-4 text-sm">
+                                        {u.is_admin ? (
+                                            <span className="text-amber-400 font-semibold">Admin</span>
+                                        ) : (
+                                            <span className="text-slate-400">Member</span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-3">
-                                            <button className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight">MANAGE ACCESS</button>
+                                            <button
+                                                className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight"
+                                                onClick={() => handleToggleAdmin(u)}
+                                            >
+                                                {u.is_admin ? "REMOVE ADMIN" : "MAKE ADMIN"}
+                                            </button>
                                             {!u.deleted_at && (
                                                 <button
                                                     className="text-xs text-red-500 hover:text-red-400 font-bold tracking-tight"

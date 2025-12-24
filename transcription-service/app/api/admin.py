@@ -109,3 +109,23 @@ def soft_delete_user(
     db.add(user)
     db.commit()
     return {"message": "User marked for deletion", "delete_after": user.delete_after}
+
+class AdminToggleRequest(BaseModel):
+    is_admin: bool
+
+@router.patch("/users/{user_id}/admin")
+def set_user_admin(
+    user_id: int,
+    payload: AdminToggleRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    check_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_admin = payload.is_admin
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"message": "updated", "is_admin": user.is_admin}
