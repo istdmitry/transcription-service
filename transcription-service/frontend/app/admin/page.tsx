@@ -60,7 +60,7 @@ export default function AdminPanel() {
             await api.createProject(token, newProject);
             const refreshed = await api.getProjectsAdmin(token);
             setProjects(refreshed);
-            setNewProject({ name: '', description: '', gdrive_folder: '', gdrive_creds: '' });
+            setNewProject({ name: '', description: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
             alert("Project created");
         } catch (e) {
             alert("Failed to create project");
