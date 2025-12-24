@@ -16,6 +16,19 @@ logger.info("Initializing API routes")
 # Create tables (For production, use Alembic)
 try:
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-migration for missing columns
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_creds TEXT"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_folder VARCHAR"))
+            conn.commit()
+            logger.info("Auto-migration completed: Added missing columns to users table")
+        except Exception as e:
+            logger.warning(f"Auto-migration skipped or failed: {e}")
+            
 except Exception as e:
     logger.error(f"Error initializing database: {e}")
 
