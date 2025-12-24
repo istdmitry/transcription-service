@@ -48,16 +48,15 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
 # Enable CORS
-origins = [
-    "http://localhost:3000",
-    "https://service.8hats.ai",
-    "https://enchanting-insight-production.up.railway.app",
-    "https://transcription-service-production-6161.up.railway.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://service.8hats.ai",
+        "https://enchanting-insight-production.up.railway.app",
+        "https://transcription-service-production-6161.up.railway.app",
+    ],
+    allow_origin_regex=".*",  # fallback to permit preview/staging domains
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
