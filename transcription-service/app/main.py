@@ -27,7 +27,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-app.include_router(auth.router)
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(transcripts.router, prefix="/transcripts", tags=["transcripts"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(logs.router, prefix="/logs", tags=["logs"])

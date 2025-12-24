@@ -4,7 +4,7 @@ from app.db.session import get_db
 
 from app.services.telegram import handle_telegram_update
 
-router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+router = APIRouter()
 
 from app.services.whatsapp import handle_whatsapp_update
 import os

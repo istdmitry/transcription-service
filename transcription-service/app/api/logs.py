@@ -3,7 +3,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 import os
 
-router = APIRouter(prefix="/logs", tags=["ops"])
+router = APIRouter()
 
 @router.get("/", response_model=list[str])
 def get_logs(lines: int = 50, current_user: User = Depends(get_current_user)):

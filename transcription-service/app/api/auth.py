@@ -11,7 +11,7 @@ from app.schemas.user import UserCreate, UserResponse
 from app.schemas.token import Token
 import uuid
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):

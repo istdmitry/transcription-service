@@ -12,7 +12,7 @@ from app.services.transcription import process_transcription
 import uuid
 import os
 
-router = APIRouter(prefix="/transcripts", tags=["transcripts"])
+router = APIRouter()
 
 @router.post("/", response_model=TranscriptResponse)
 def upload_transcript(
