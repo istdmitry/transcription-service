@@ -13,6 +13,8 @@ export default function AdminPanel() {
     const [assignment, setAssignment] = useState({ projectId: '', userId: '', role: 'member' });
     const [projectDrive, setProjectDrive] = useState({ projectId: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
     const [manageProjectId, setManageProjectId] = useState<number | null>(null);
+    const [manageUserId, setManageUserId] = useState<number | null>(null);
+    const [manageUserAdmin, setManageUserAdmin] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [savingProject, setSavingProject] = useState(false);
     const [assigning, setAssigning] = useState(false);
@@ -130,13 +132,15 @@ export default function AdminPanel() {
         }
     };
 
-    const handleToggleAdmin = async (u: any) => {
+    const handleToggleAdmin = async (is_admin: boolean) => {
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            await api.setUserAdmin(token, u.id, !u.is_admin);
+            if (!manageUserId) return;
+            await api.setUserAdmin(token, manageUserId, is_admin);
             const refreshed = await api.getAdminUsers(token);
             setUsers(refreshed);
+            setManageUserId(null);
         } catch (e) {
             alert("Failed to update admin flag");
         }
@@ -410,12 +414,30 @@ export default function AdminPanel() {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-3">
-                                            <button
-                                                className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight"
-                                                onClick={() => handleToggleAdmin(u)}
-                                            >
-                                                {u.is_admin ? "REMOVE ADMIN" : "MAKE ADMIN"}
-                                            </button>
+                                            {manageUserId === u.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        className="bg-[#0a0c10] border border-[#30363d] rounded px-2 py-1 text-xs text-slate-200"
+                                                        value={manageUserAdmin ? "admin" : "member"}
+                                                        onChange={(e) => setManageUserAdmin(e.target.value === "admin")}
+                                                    >
+                                                        <option value="member">Member</option>
+                                                        <option value="admin">Admin</option>
+                                                    </select>
+                                                    <Button size="sm" onClick={() => handleToggleAdmin(manageUserAdmin)}>Save</Button>
+                                                    <button className="text-xs text-slate-500 hover:text-white" onClick={() => setManageUserId(null)}>Cancel</button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight"
+                                                    onClick={() => {
+                                                        setManageUserId(u.id);
+                                                        setManageUserAdmin(!!u.is_admin);
+                                                    }}
+                                                >
+                                                    MANAGE ACCESS
+                                                </button>
+                                            )}
                                             {!u.deleted_at && (
                                                 <button
                                                     className="text-xs text-red-500 hover:text-red-400 font-bold tracking-tight"
