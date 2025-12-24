@@ -123,16 +123,19 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_u
             # Determine which credentials to use
             creds = None
             folder = None
+            sa_email = None
             
             if transcript.project_id:
                 project = db.query(Project).get(transcript.project_id)
                 if project:
                     creds = project.gdrive_creds
                     folder = project.gdrive_folder
+                    sa_email = project.gdrive_email
             else:
                 user = transcript.owner
                 creds = user.gdrive_creds
                 folder = user.gdrive_folder
+                sa_email = user.gdrive_email
 
             if creds and folder:
                 # Format: {YYYY-MM-DD} {UserEmail} {OriginalFilename}.txt
@@ -144,10 +147,25 @@ def process_transcription(transcript_id: int, s3_key: str, db: Session, notify_u
                 g_file_id = upload_to_drive(gdrive_filename, result, creds, folder)
                 if g_file_id:
                     transcript.gdrive_file_id = g_file_id
+                    transcript.gdrive_error_message = None
                     db.commit()
+                else:
+                    transcript.gdrive_error_message = "Google Drive upload failed (no file id returned)"
+                    db.commit()
+            else:
+                transcript.gdrive_error_message = "Google Drive upload skipped: missing credentials or folder ID"
+                db.commit()
             
         except Exception as e:
-            print(f"GDrive Upload Error (Non-blocking): {e}")
+            err_msg = f"GDrive upload error: {e}"
+            transcript.gdrive_error_message = err_msg
+            db.commit()
+            print(err_msg)
+            # Notify user via Telegram if available
+            if notify_user and transcript.owner.telegram_chat_id:
+                from app.services.telegram import send_message
+                share_hint = f"Share the folder with service account: {sa_email}" if sa_email else "Check service account access to the folder."
+                send_message(transcript.owner.telegram_chat_id, f"Google Drive upload failed for '{transcript.filename}': {e}. {share_hint}")
         # --------------------------------
 
         # 6. Notify Telegram (Status Update Only)

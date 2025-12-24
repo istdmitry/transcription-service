@@ -11,7 +11,8 @@ export default function AdminPanel() {
     const [projects, setProjects] = useState<any[]>([]);
     const [newProject, setNewProject] = useState({ name: '', description: '', gdrive_folder: '', gdrive_creds: '' });
     const [assignment, setAssignment] = useState({ projectId: '', userId: '', role: 'member' });
-    const [projectDrive, setProjectDrive] = useState({ projectId: '', gdrive_folder: '', gdrive_creds: '' });
+    const [projectDrive, setProjectDrive] = useState({ projectId: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
+    const [manageProjectId, setManageProjectId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [savingProject, setSavingProject] = useState(false);
     const [assigning, setAssigning] = useState(false);
@@ -100,16 +101,32 @@ export default function AdminPanel() {
             setUpdatingDrive(true);
             await api.updateProject(token, parseInt(projectDrive.projectId), {
                 gdrive_folder: projectDrive.gdrive_folder,
-                gdrive_creds: projectDrive.gdrive_creds || undefined
+                gdrive_creds: projectDrive.gdrive_creds || undefined,
+                gdrive_email: projectDrive.gdrive_email || undefined
             });
             const refreshed = await api.getProjectsAdmin(token);
             setProjects(refreshed);
-            setProjectDrive({ projectId: '', gdrive_folder: '', gdrive_creds: '' });
+            setProjectDrive({ projectId: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
+            setManageProjectId(null);
             alert("Drive settings updated");
         } catch (e) {
             alert("Failed to update project drive");
         } finally {
             setUpdatingDrive(false);
+        }
+    };
+
+    const handleDeleteUser = async (id: number) => {
+        if (!confirm("Soft delete this user? Data retained 10 days.")) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            await api.deleteUser(token, id);
+            const refreshed = await api.getAdminUsers(token);
+            setUsers(refreshed);
+            alert("User marked for deletion");
+        } catch (e) {
+            alert("Failed to delete user");
         }
     };
 
@@ -146,7 +163,7 @@ export default function AdminPanel() {
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
                     <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-6">
                         <h3 className="text-lg font-bold text-white mb-4">Create Project</h3>
                         <div className="space-y-3">
@@ -167,6 +184,12 @@ export default function AdminPanel() {
                                 placeholder="Google Drive Folder ID"
                                 value={newProject.gdrive_folder}
                                 onChange={(e) => setNewProject({ ...newProject, gdrive_folder: e.target.value })}
+                            />
+                            <input
+                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
+                                placeholder="Service Account Email"
+                                value={newProject.gdrive_email || ''}
+                                onChange={(e) => setNewProject({ ...newProject, gdrive_email: e.target.value })}
                             />
                             <textarea
                                 className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm font-mono"
@@ -217,38 +240,6 @@ export default function AdminPanel() {
                             </Button>
                         </div>
                     </div>
-
-                    <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">Connect Project to Google Drive</h3>
-                        <div className="space-y-3">
-                            <select
-                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
-                                value={projectDrive.projectId}
-                                onChange={(e) => setProjectDrive({ ...projectDrive, projectId: e.target.value })}
-                            >
-                                <option value="">Select Project</option>
-                                {projects.map((p) => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                            <input
-                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
-                                placeholder="Google Drive Folder ID"
-                                value={projectDrive.gdrive_folder}
-                                onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_folder: e.target.value })}
-                            />
-                            <textarea
-                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm font-mono"
-                                placeholder="Service Account JSON (optional, stored encrypted)"
-                                rows={4}
-                                value={projectDrive.gdrive_creds}
-                                onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_creds: e.target.value })}
-                            />
-                            <Button onClick={handleUpdateProjectDrive} disabled={updatingDrive}>
-                                {updatingDrive ? "Saving..." : "Save Drive Settings"}
-                            </Button>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden mb-12">
@@ -262,7 +253,7 @@ export default function AdminPanel() {
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Drive</th>
                                 <th className="px-6 py-4">Members</th>
-                                <th className="px-6 py-4 text-right">Created</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#30363d]">
@@ -277,6 +268,7 @@ export default function AdminPanel() {
                                         <div className={`text-[11px] ${p.has_gdrive_creds ? 'text-green-500' : 'text-slate-500'}`}>
                                             {p.has_gdrive_creds ? 'Service account stored' : 'Credentials missing'}
                                         </div>
+                                        {p.gdrive_email && <div className="text-[11px] text-slate-400">SA: {p.gdrive_email}</div>}
                                     </td>
                                     <td className="px-6 py-4 text-sm">
                                         <div className="flex flex-wrap gap-2">
@@ -288,13 +280,71 @@ export default function AdminPanel() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm text-slate-500">
-                                        {new Date(p.created_at).toLocaleDateString()}
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                className="text-xs px-2 py-1 bg-slate-800 border border-slate-700 rounded text-slate-200 hover:bg-slate-700"
+                                                onClick={() => {
+                                                    setManageProjectId(p.id);
+                                                    setProjectDrive({
+                                                        projectId: p.id.toString(),
+                                                        gdrive_folder: p.gdrive_folder || '',
+                                                        gdrive_email: p.gdrive_email || '',
+                                                        gdrive_creds: ''
+                                                    });
+                                                }}
+                                            >
+                                                Manage
+                                            </button>
+                                            <span className="text-[11px] text-slate-500 self-center">{new Date(p.created_at).toLocaleDateString()}</span>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+
+                {manageProjectId && (
+                    <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-6 mb-10">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-white">Manage Project Drive</h3>
+                            <button className="text-xs text-slate-400 hover:text-white" onClick={() => setManageProjectId(null)}>Close</button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input
+                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
+                                placeholder="Google Drive Folder ID"
+                                value={projectDrive.gdrive_folder}
+                                onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_folder: e.target.value })}
+                            />
+                            <input
+                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
+                                placeholder="Service Account Email"
+                                value={projectDrive.gdrive_email}
+                                onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_email: e.target.value })}
+                            />
+                            <textarea
+                                className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm font-mono md:col-span-3"
+                                placeholder="Service Account JSON (optional, stored encrypted)"
+                                rows={3}
+                                value={projectDrive.gdrive_creds}
+                                onChange={(e) => setProjectDrive({ ...projectDrive, gdrive_creds: e.target.value })}
+                            />
+                        </div>
+                        <div className="mt-4 flex gap-3">
+                            <Button onClick={handleUpdateProjectDrive} disabled={updatingDrive}>
+                                {updatingDrive ? "Saving..." : "Save Drive Settings"}
+                            </Button>
+                            <button
+                                className="text-xs text-slate-400 hover:text-white"
+                                onClick={() => setManageProjectId(null)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-2">Share the folder with the service account email to enable uploads.</p>
+                    </div>
+                )}
 
                 <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden mb-12">
                     <div className="p-6 border-b border-[#30363d] bg-[#161b22]">
@@ -334,9 +384,22 @@ export default function AdminPanel() {
                                         {u.last_transcript_at && (
                                             <div className="text-[10px] text-slate-500">Last: {new Date(u.last_transcript_at).toLocaleDateString()}</div>
                                         )}
+                                        {u.deleted_at && (
+                                            <div className="text-[10px] text-red-400">Deleted: {new Date(u.deleted_at).toLocaleDateString()}</div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight">MANAGE ACCESS</button>
+                                        <div className="flex justify-end gap-3">
+                                            <button className="text-xs text-sky-500 hover:text-sky-400 font-bold tracking-tight">MANAGE ACCESS</button>
+                                            {!u.deleted_at && (
+                                                <button
+                                                    className="text-xs text-red-500 hover:text-red-400 font-bold tracking-tight"
+                                                    onClick={() => handleDeleteUser(u.id)}
+                                                >
+                                                    DELETE
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

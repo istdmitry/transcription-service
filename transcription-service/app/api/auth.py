@@ -20,6 +20,7 @@ router = APIRouter()
 class UserGDriveUpdate(BaseModel):
     gdrive_creds: Optional[str] = None
     gdrive_folder: Optional[str] = None
+    gdrive_email: Optional[str] = None
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -65,6 +66,7 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         api_key=current_user.api_key,
         is_admin=current_user.is_admin,
         gdrive_folder=current_user.gdrive_folder,
+        gdrive_email=current_user.gdrive_email,
         has_gdrive_creds=bool(current_user.gdrive_creds)
     )
 
@@ -82,6 +84,8 @@ def update_personal_gdrive(
         current_user.gdrive_creds = encrypt_data(payload.gdrive_creds) if payload.gdrive_creds else None
     if payload.gdrive_folder is not None:
         current_user.gdrive_folder = payload.gdrive_folder
+    if payload.gdrive_email is not None:
+        current_user.gdrive_email = payload.gdrive_email
 
     db.add(current_user)
     db.commit()

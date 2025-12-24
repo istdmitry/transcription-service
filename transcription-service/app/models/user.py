@@ -17,7 +17,11 @@ class User(Base):
     
     # Personal GDrive (Encrypted)
     gdrive_creds = Column(Text, nullable=True)
+    gdrive_email = Column(String, nullable=True)
     gdrive_folder = Column(String, nullable=True)
+    
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    delete_after = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

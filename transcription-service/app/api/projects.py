@@ -50,7 +50,8 @@ def create_project(
         name=project_in.name,
         description=project_in.description,
         gdrive_folder=project_in.gdrive_folder,
-        gdrive_creds=encrypted_creds
+        gdrive_creds=encrypted_creds,
+        gdrive_email=project_in.gdrive_email
     )
     db.add(db_project)
     db.commit()

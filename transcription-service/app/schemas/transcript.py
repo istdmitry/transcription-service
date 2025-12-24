@@ -20,6 +20,7 @@ class TranscriptResponse(BaseModel):
     language: str
     project_id: Optional[int] = None
     gdrive_file_id: Optional[str] = None
+    gdrive_error_message: Optional[str] = None
     error_message: Optional[str] = None
 
     class Config:

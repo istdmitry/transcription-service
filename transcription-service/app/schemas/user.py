@@ -17,7 +17,10 @@ class UserResponse(UserBase):
     api_key: Optional[str] = None
     is_admin: bool = False
     gdrive_folder: Optional[str] = None
+    gdrive_email: Optional[str] = None
     has_gdrive_creds: bool = False
+    deleted_at: Optional[str] = None
+    delete_after: Optional[str] = None
 
     class Config:
         from_attributes = True

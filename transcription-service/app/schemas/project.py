@@ -6,6 +6,7 @@ class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
     gdrive_folder: Optional[str] = None
+    gdrive_email: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     gdrive_creds: Optional[str] = None # Plain JSON input, will be encrypted by API

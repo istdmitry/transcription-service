@@ -26,6 +26,8 @@ class UserAdminResponse(BaseModel):
     projects: List[str]
     last_transcript_at: Optional[datetime]
     total_transcripts: int
+    deleted_at: Optional[datetime] = None
+    delete_after: Optional[datetime] = None
 
 @router.get("/users", response_model=List[UserAdminResponse])
 def list_users_admin(
@@ -56,7 +58,9 @@ def list_users_admin(
             is_admin=user.is_admin,
             projects=proj_list,
             last_transcript_at=stats[1],
-            total_transcripts=stats[0] or 0
+            total_transcripts=stats[0] or 0,
+            deleted_at=user.deleted_at,
+            delete_after=user.delete_after
         ))
         
     return results
@@ -77,3 +81,31 @@ def get_system_stats(
         "total_transcripts": total_transcripts,
         "total_projects": total_projects
     }
+
+@router.delete("/users/{user_id}")
+def soft_delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    check_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+    user.is_active = False
+    user.deleted_at = now
+    user.delete_after = now + timedelta(days=10)
+    # scrub personal integrations
+    user.api_key = None
+    user.phone_number = None
+    user.telegram_chat_id = None
+    user.gdrive_creds = None
+    user.gdrive_folder = None
+    user.gdrive_email = None
+
+    db.add(user)
+    db.commit()
+    return {"message": "User marked for deletion", "delete_after": user.delete_after}

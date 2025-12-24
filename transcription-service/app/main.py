@@ -29,6 +29,7 @@ try:
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id)"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS language VARCHAR DEFAULT 'en'"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS gdrive_file_id VARCHAR"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS gdrive_error_message VARCHAR"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS error_message VARCHAR"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
             

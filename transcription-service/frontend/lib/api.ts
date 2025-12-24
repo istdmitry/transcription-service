@@ -160,8 +160,17 @@ export const api = {
         return res.json();
     },
 
+    async deleteUser(token: string, id: number) {
+        const res = await fetch(`${API_URL}/admin/users/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to delete user');
+        return res.json();
+    },
+
     // --- Personal GDrive ---
-    async updateMyGDrive(token: string, data: { gdrive_creds?: string, gdrive_folder?: string }) {
+    async updateMyGDrive(token: string, data: { gdrive_creds?: string, gdrive_folder?: string, gdrive_email?: string }) {
         const res = await fetch(`${API_URL}/auth/me/gdrive`, {
             method: 'PATCH',
             headers: {

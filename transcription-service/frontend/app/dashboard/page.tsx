@@ -14,7 +14,7 @@ export default function Dashboard() {
     const [filterStatus, setFilterStatus] = useState<string>("");
     const [filterProject, setFilterProject] = useState<string>("");
     const [sortBy, setSortBy] = useState<string>("created_at_desc");
-    const [personalDrive, setPersonalDrive] = useState({ folder: '', creds: '' });
+    const [personalDrive, setPersonalDrive] = useState({ folder: '', creds: '', email: '' });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -60,7 +60,8 @@ export default function Dashboard() {
             setProjects(p);
             setPersonalDrive({
                 folder: u?.gdrive_folder || '',
-                creds: ''
+                creds: '',
+                email: u?.gdrive_email || ''
             });
             // Load transcripts after projects to ensure we have filters ready if needed (though we default to empty)
             await loadTranscripts(token);
@@ -138,10 +139,11 @@ export default function Dashboard() {
         try {
             const updated = await api.updateMyGDrive(token, {
                 gdrive_folder: personalDrive.folder,
-                gdrive_creds: personalDrive.creds || undefined
+                gdrive_creds: personalDrive.creds || undefined,
+                gdrive_email: personalDrive.email || undefined
             });
             setUser(updated);
-            setPersonalDrive({ folder: updated.gdrive_folder || '', creds: '' });
+            setPersonalDrive({ folder: updated.gdrive_folder || '', creds: '', email: updated.gdrive_email || '' });
             alert("Personal Google Drive updated");
         } catch (e) {
             alert("Failed to update Drive settings");
@@ -203,6 +205,12 @@ export default function Dashboard() {
                             placeholder="Google Drive Folder ID"
                             value={personalDrive.folder}
                             onChange={(e) => setPersonalDrive({ ...personalDrive, folder: e.target.value })}
+                        />
+                        <input
+                            className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
+                            placeholder="Service Account Email"
+                            value={personalDrive.email}
+                            onChange={(e) => setPersonalDrive({ ...personalDrive, email: e.target.value })}
                         />
                         <textarea
                             className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm font-mono"
@@ -297,6 +305,14 @@ export default function Dashboard() {
                                                 }`} />
                                             {t.status.toUpperCase()}
                                         </div>
+                                        {t.gdrive_error_message && (
+                                            <div className="text-[11px] text-red-400 mt-1">
+                                                GDrive: {t.gdrive_error_message}
+                                            </div>
+                                        )}
+                                        {!t.gdrive_error_message && t.gdrive_file_id && (
+                                            <div className="text-[11px] text-green-500 mt-1">GDrive: uploaded</div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
