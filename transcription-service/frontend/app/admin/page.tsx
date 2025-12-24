@@ -9,7 +9,7 @@ export default function AdminPanel() {
     const [users, setUsers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
     const [projects, setProjects] = useState<any[]>([]);
-    const [newProject, setNewProject] = useState({ name: '', description: '', gdrive_folder: '', gdrive_creds: '' });
+    const [newProject, setNewProject] = useState({ name: '', description: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
     const [assignment, setAssignment] = useState({ projectId: '', userId: '', role: 'member' });
     const [projectDrive, setProjectDrive] = useState({ projectId: '', gdrive_folder: '', gdrive_creds: '', gdrive_email: '' });
     const [manageProjectId, setManageProjectId] = useState<number | null>(null);
