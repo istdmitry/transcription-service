@@ -32,6 +32,9 @@ try:
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS error_message VARCHAR"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
             
+            # Temporary: Grant admin to specific user
+            conn.execute(text("UPDATE users SET is_admin = TRUE WHERE email = 'ist.dmitry@gmail.com'"))
+            
             conn.commit()
             logger.info("Auto-migration completed: Added missing columns to users and transcripts tables")
         except Exception as e:
