@@ -1,4 +1,5 @@
 # Deployment trigger
+import logging
 from fastapi import FastAPI
 from app.core.config import settings
 from app.api import auth, transcripts, webhooks, logs, projects, admin
@@ -7,6 +8,9 @@ from app.core.logging_config import setup_logging
 # Setup Logging
 setup_logging()
 logger = logging.getLogger(__name__)
+
+print("Loading API routers...")
+logger.info("Initializing API routes")
 
 # Create tables (For production, use Alembic)
 try:
@@ -33,6 +37,7 @@ app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(logs.router, prefix="/logs", tags=["logs"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+print(f"Routes registered: {[r.path for r in app.routes]}")
 
 @app.get("/")
 def read_root():
