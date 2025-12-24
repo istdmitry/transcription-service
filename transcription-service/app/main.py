@@ -24,7 +24,14 @@ try:
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_creds TEXT"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gdrive_folder VARCHAR"))
+            
+            # Transcript table updates
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id)"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS language VARCHAR DEFAULT 'en'"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS gdrive_file_id VARCHAR"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS error_message VARCHAR"))
+            conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
+            
             conn.commit()
             logger.info("Auto-migration completed: Added missing columns to users and transcripts tables")
         except Exception as e:
@@ -38,9 +45,16 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
 # Enable CORS
+origins = [
+    "http://localhost:3000",
+    "https://service.8hats.ai",
+    "https://enchanting-insight-production.up.railway.app",
+    "https://transcription-service-production-6161.up.railway.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
