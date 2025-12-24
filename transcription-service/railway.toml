@@ -5,5 +5,6 @@ builder = "railpack"
 startCommand = "bash start.sh"
 healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
+root = "."
 
 
