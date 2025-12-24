@@ -15,6 +15,9 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     api_key: Optional[str] = None
+    is_admin: bool = False
+    gdrive_folder: Optional[str] = None
+    has_gdrive_creds: bool = False
 
     class Config:
         from_attributes = True

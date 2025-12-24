@@ -20,3 +20,7 @@ class User(Base):
     gdrive_folder = Column(String, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def has_gdrive_creds(self) -> bool:
+        return bool(self.gdrive_creds)

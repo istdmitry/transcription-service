@@ -27,6 +27,15 @@ def list_my_projects(
     projects = db.query(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id).all()
     return projects
 
+@router.get("/admin", response_model=List[ProjectDetailResponse])
+def list_all_projects_admin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Admin-only list of all projects with member details."""
+    check_admin(current_user)
+    return db.query(Project).all()
+
 @router.post("/", response_model=ProjectResponse)
 def create_project(
     project_in: ProjectCreate,

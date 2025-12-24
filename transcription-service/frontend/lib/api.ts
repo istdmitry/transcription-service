@@ -102,8 +102,39 @@ export const api = {
         return res.json();
     },
 
+    async getProjectsAdmin(token: string) {
+        const res = await fetch(`${API_URL}/projects/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
     async createProject(token: string, data: any) {
         const res = await fetch(`${API_URL}/projects/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+
+    async updateProject(token: string, id: number, data: any) {
+        const res = await fetch(`${API_URL}/projects/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+
+    async addProjectMember(token: string, projectId: number, data: any) {
+        const res = await fetch(`${API_URL}/projects/${projectId}/members`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -126,6 +157,20 @@ export const api = {
         const res = await fetch(`${API_URL}/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        return res.json();
+    },
+
+    // --- Personal GDrive ---
+    async updateMyGDrive(token: string, data: { gdrive_creds?: string, gdrive_folder?: string }) {
+        const res = await fetch(`${API_URL}/auth/me/gdrive`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update Google Drive settings');
         return res.json();
     }
 

@@ -6,9 +6,10 @@ from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.transcript import Transcript, TranscriptStatus
-from app.schemas.transcript import TranscriptResponse
+from app.schemas.transcript import TranscriptResponse, TranscriptReassignRequest
 from app.utils.s3 import s3_client
 from app.services.transcription import process_transcription
+from app.models.project import Project, ProjectMember
 import uuid
 import os
 
@@ -124,3 +125,39 @@ def delete_transcript(
     db.delete(transcript)
     db.commit()
     return
+
+@router.patch("/{transcript_id}/reassign", response_model=TranscriptResponse)
+def reassign_transcript(
+    transcript_id: int,
+    payload: TranscriptReassignRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    transcript = db.query(Transcript).filter(Transcript.id == transcript_id).first()
+    if not transcript:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+
+    if not current_user.is_admin and transcript.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this transcript")
+
+    # Validate project membership if assigning to a project
+    if payload.project_id:
+        project = db.query(Project).filter(Project.id == payload.project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        if not current_user.is_admin:
+            membership = db.query(ProjectMember).filter(
+                ProjectMember.project_id == payload.project_id,
+                ProjectMember.user_id == current_user.id
+            ).first()
+            if not membership:
+                raise HTTPException(status_code=403, detail="Not a member of this project")
+
+        transcript.project_id = payload.project_id
+    else:
+        transcript.project_id = None
+
+    db.commit()
+    db.refresh(transcript)
+    return transcript

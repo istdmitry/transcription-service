@@ -19,6 +19,10 @@ class Project(Base):
     
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
 
+    @property
+    def has_gdrive_creds(self) -> bool:
+        return bool(self.gdrive_creds)
+
 class ProjectMember(Base):
     __tablename__ = "project_members"
 
@@ -26,11 +30,15 @@ class ProjectMember(Base):
     project_id = Column(Integer, ForeignKey("projects.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     role = Column(String, default="member") # admin, member
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project = relationship("Project", back_populates="members")
     user = relationship("app.models.user.User")
+
+    @property
+    def email(self):
+        return self.user.email if self.user else None
 
 class PendingInteraction(Base):
     """Tracks asynchronous Telegram uploads while waiting for project selection."""

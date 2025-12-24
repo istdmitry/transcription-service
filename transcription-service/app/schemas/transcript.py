@@ -24,3 +24,6 @@ class TranscriptResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TranscriptReassignRequest(BaseModel):
+    project_id: Optional[int] = None

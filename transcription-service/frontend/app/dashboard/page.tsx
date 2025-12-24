@@ -6,9 +6,15 @@ import { Button } from '@/components/ui';
 
 export default function Dashboard() {
     const router = useRouter();
+    const [user, setUser] = useState<any | null>(null);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [transcripts, setTranscripts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string>("");
     const [filterProject, setFilterProject] = useState<string>("");
     const [sortBy, setSortBy] = useState<string>("created_at_desc");
+    const [personalDrive, setPersonalDrive] = useState({ folder: '', creds: '' });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -52,6 +58,10 @@ export default function Dashboard() {
             ]);
             setUser(u);
             setProjects(p);
+            setPersonalDrive({
+                folder: u?.gdrive_folder || '',
+                creds: ''
+            });
             // Load transcripts after projects to ensure we have filters ready if needed (though we default to empty)
             await loadTranscripts(token);
         } catch (e) {
@@ -81,13 +91,62 @@ export default function Dashboard() {
         }
     };
 
-    // ... handleUpload ... (omitted for brevity, assume unchanged logic needs to call loadTranscripts)
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-    // Replacing handleUpload refreshing:
-    // ...
-    // const t = await api.getTranscripts(token); -> loadTranscripts(token)
+        try {
+            setUploading(true);
+            await api.uploadFile(token, file);
+            await loadTranscripts(token);
+        } catch (err) {
+            alert("Upload failed");
+        } finally {
+            setUploading(false);
+            e.target.value = "";
+        }
+    };
 
-    // ...
+    const handleReassign = async (transcript: any, projectId: number | null) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            await api.reassignTranscript(token, transcript.id, projectId);
+            await loadTranscripts(token);
+        } catch (e) {
+            alert("Failed to reassign transcript");
+        }
+    };
+
+    const handleDelete = async (transcript: any) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        if (!confirm("Delete this transcript?")) return;
+        try {
+            await api.deleteTranscript(token, transcript.id);
+            await loadTranscripts(token);
+        } catch (e) {
+            alert("Failed to delete transcript");
+        }
+    };
+
+    const handleSavePersonalDrive = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const updated = await api.updateMyGDrive(token, {
+                gdrive_folder: personalDrive.folder,
+                gdrive_creds: personalDrive.creds || undefined
+            });
+            setUser(updated);
+            setPersonalDrive({ folder: updated.gdrive_folder || '', creds: '' });
+            alert("Personal Google Drive updated");
+        } catch (e) {
+            alert("Failed to update Drive settings");
+        }
+    };
 
     if (loading && !user) return <div className="p-20 text-center text-slate-400">Loading your workspace...</div>;
 
@@ -126,6 +185,35 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </header>
+
+                {/* Personal Google Drive */}
+                <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                        <div>
+                            <div className="text-sm text-slate-400">Personal Google Drive</div>
+                            <div className={`text-xs ${user?.has_gdrive_creds ? 'text-green-500' : 'text-slate-500'}`}>
+                                {user?.has_gdrive_creds ? 'Service account stored' : 'Credentials not connected'}
+                            </div>
+                        </div>
+                        <Button onClick={handleSavePersonalDrive}>Save</Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                            className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm"
+                            placeholder="Google Drive Folder ID"
+                            value={personalDrive.folder}
+                            onChange={(e) => setPersonalDrive({ ...personalDrive, folder: e.target.value })}
+                        />
+                        <textarea
+                            className="w-full bg-[#0a0c10] border border-[#30363d] rounded px-3 py-2 text-sm font-mono"
+                            placeholder="Service Account JSON (optional, stored encrypted)"
+                            rows={3}
+                            value={personalDrive.creds}
+                            onChange={(e) => setPersonalDrive({ ...personalDrive, creds: e.target.value })}
+                        />
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-2">Leave credentials empty to keep existing. Folder determines where personal transcripts are exported.</p>
+                </div>
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-4 mb-6 p-4 bg-[#161b22] border border-[#30363d] rounded-lg items-center">

@@ -10,8 +10,16 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.token import Token
 import uuid
+from pydantic import BaseModel
+from typing import Optional
+from app.core.crypto import encrypt_data
+from app.api.deps import get_current_user
 
 router = APIRouter()
+
+class UserGDriveUpdate(BaseModel):
+    gdrive_creds: Optional[str] = None
+    gdrive_folder: Optional[str] = None
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -48,4 +56,27 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    # Attach non-sensitive flags for the frontend
+    current_user.has_gdrive_creds = bool(current_user.gdrive_creds)
+    return current_user
+
+@router.patch("/me/gdrive", response_model=UserResponse)
+def update_personal_gdrive(
+    payload: UserGDriveUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Connect or update a user's personal Google Drive settings.
+    Credentials are encrypted before storing.
+    """
+    if payload.gdrive_creds is not None:
+        current_user.gdrive_creds = encrypt_data(payload.gdrive_creds) if payload.gdrive_creds else None
+    if payload.gdrive_folder is not None:
+        current_user.gdrive_folder = payload.gdrive_folder
+
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    current_user.has_gdrive_creds = bool(current_user.gdrive_creds)
     return current_user

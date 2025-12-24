@@ -30,6 +30,7 @@ class ProjectMemberResponse(ProjectMemberBase):
 class ProjectResponse(ProjectBase):
     id: int
     created_at: datetime
+    has_gdrive_creds: bool = False
     
     class Config:
         from_attributes = True
