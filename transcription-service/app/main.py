@@ -35,6 +35,9 @@ try:
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS gdrive_error_message VARCHAR"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS error_message VARCHAR"))
             conn.execute(text("ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
+
+            # Projects table
+            conn.execute(text("ALTER TABLE projects ADD COLUMN IF NOT EXISTS gdrive_email VARCHAR"))
             
             # Temporary: Grant admin to specific user
             conn.execute(text("UPDATE users SET is_admin = TRUE WHERE email = 'ist.dmitry@gmail.com'"))
