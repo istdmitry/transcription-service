@@ -39,8 +39,13 @@ export const api = {
         return res.json();
     },
 
-    async getTranscripts(token: string) {
-        const res = await fetch(`${API_URL}/transcripts/`, {
+    async getTranscripts(token: string, filters?: { status?: string, project_id?: number, sort_by?: string }) {
+        const params = new URLSearchParams();
+        if (filters?.status) params.append('status', filters.status);
+        if (filters?.project_id) params.append('project_id', filters.project_id.toString());
+        if (filters?.sort_by) params.append('sort_by', filters.sort_by);
+
+        const res = await fetch(`${API_URL}/transcripts/?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         return res.json();
@@ -79,7 +84,7 @@ export const api = {
     async reassignTranscript(token: string, id: number, project_id: number | null) {
         const res = await fetch(`${API_URL}/transcripts/${id}/reassign`, {
             method: 'PATCH',
-            headers: { 
+            headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
@@ -100,7 +105,7 @@ export const api = {
     async createProject(token: string, data: any) {
         const res = await fetch(`${API_URL}/projects/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
