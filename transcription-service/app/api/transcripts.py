@@ -55,14 +55,37 @@ def upload_transcript(
     
     return new_transcript
 
+from typing import List, Optional
+
 @router.get("/", response_model=List[TranscriptResponse])
 def list_transcripts(
     skip: int = 0, 
     limit: int = 100, 
+    status: Optional[str] = None,
+    sort_by: Optional[str] = "created_at_desc", # created_at_asc, filename_asc, etc.
+    project_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    transcripts = db.query(Transcript).filter(Transcript.user_id == current_user.id).offset(skip).limit(limit).all()
+    query = db.query(Transcript).filter(Transcript.user_id == current_user.id)
+    
+    if status:
+        query = query.filter(Transcript.status == status)
+        
+    if project_id:
+        query = query.filter(Transcript.project_id == project_id)
+        
+    # Sorting
+    if sort_by == "created_at_desc":
+        query = query.order_by(Transcript.created_at.desc())
+    elif sort_by == "created_at_asc":
+        query = query.order_by(Transcript.created_at.asc())
+    elif sort_by == "filename_asc":
+        query = query.order_by(Transcript.filename.asc())
+    elif sort_by == "filename_desc":
+        query = query.order_by(Transcript.filename.desc())
+        
+    transcripts = query.offset(skip).limit(limit).all()
     return transcripts
 
 @router.get("/{transcript_id}", response_model=TranscriptResponse)
