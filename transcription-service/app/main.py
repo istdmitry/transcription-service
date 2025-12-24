@@ -3,7 +3,8 @@ import logging
 from fastapi import FastAPI
 from app.core.config import settings
 from app.api import auth, transcripts, webhooks, logs, projects, admin
-from app.db.base import Base, engine
+from app.db.base import Base
+from app.db.session import engine
 from app.core.logging_config import setup_logging
 # Setup Logging
 setup_logging()
